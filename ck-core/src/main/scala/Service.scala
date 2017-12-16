@@ -17,6 +17,9 @@ package object service {
 }
 
 package service {
+
+  import scala.ref.Reference
+
   trait Service[+C <: ServiceClass[C]] {
 
     val id: ServiceId[C]
@@ -43,9 +46,7 @@ package service {
     def consume: (Command[_]) => ()
   }
 
-  trait ServiceReference[C <: ServiceClass[C]] {
-    def apply(): Service[C]
-  }
+  trait ServiceReference[C <: ServiceClass[C]] extends Reference[Service[C]]
 
   object ServiceReference {
 
