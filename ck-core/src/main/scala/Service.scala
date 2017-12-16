@@ -4,23 +4,22 @@ import java.util.UUID
 
 package object service {
 
-  trait Command[+C <: ServiceClass[C]]
+  trait Command[C <: ServiceClass[C]]
 
-  trait Event[+C <: ServiceClass[C]]
+  trait Event[C <: ServiceClass[C]]
 
   type ServiceId[C <: ServiceClass[C]] = UUID
   type ClassId[C <: ServiceClass[C]] = UUID
-  type ServiceRef[+C <: ServiceClass[C]] = () => Service[C]
-  type Listener[-E <: Event[ServiceClass[_]]] = (E => ())
+  type ServiceRef[C <: ServiceClass[C]] = () => Service[C]
+  type Listener[C <: ServiceClass[C], E <: Event[C]] = Function1[Unit, E]
 
   implicit def callByName2StaticServiceRef[C <: ServiceClass[C]](f: => Service[C]): ServiceRef[C] = () => f
 }
 
 package service {
+import scala.ref.Reference
 
-  import scala.ref.Reference
-
-  trait Service[+C <: ServiceClass[C]] {
+  trait Service[C <: ServiceClass[C]] {
 
     val id: ServiceId[C]
     val classId: ClassId[C]
@@ -29,11 +28,11 @@ package service {
 
     def send(c: Command[C])
 
-    def subscribe(l: Listener[Event[C]])
+    def subscribe(l: Listener[C, Event[C]])
 
   }
 
-  trait ServiceClass[+C <: ServiceClass[C]] {
+  trait ServiceClass[C <: ServiceClass[C]] {
 
     val classId: ClassId[C]
     val commands: Set[Command[C]]
@@ -43,7 +42,7 @@ package service {
   }
 
   trait ServiceDriver {
-    def consume: (Command[_]) => ()
+    def consume: Function1[Unit, Command[_]]
   }
 
   trait ServiceReference[C <: ServiceClass[C]] extends Reference[Service[C]]
