@@ -26,8 +26,6 @@ package service {
 
     def send(c: Command[C])
 
-    def send(e: Event[C])
-
     def subscribe(l: Listener[Event[C]])
 
   }
