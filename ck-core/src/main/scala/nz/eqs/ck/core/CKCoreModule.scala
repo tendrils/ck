@@ -1,7 +1,7 @@
 package nz.eqs.ck.core
 
-import nz.eqs.ck.{CKApplicationService, Module}
+import ck.module.Module
 
-class CKCoreModule extends Module[CKCoreModule](new CKApplicationService[_] {}) {
+class CKCoreModule extends Module[CKCoreModule] {
 
 }
