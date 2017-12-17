@@ -1,21 +1,17 @@
-package ck
+package nz.eqs.ck
 
 import scala.reflect.ClassTag
 
 package context {
 
-  trait Context[T_Ctx] {
-    def apply[T <: T_Ctx](key: Class[T]): Option[T]
+  trait Context[T_Key, T_Val] {
+    def apply[T <: T_Val](key: Class[T]): Option[T]
 
-    def apply(key: Symbol): Option[T_Ctx]
+    def apply(key: T_Key): Option[T_Val]
 
-    def set[T <: T_Ctx, C: ClassTag[T]](value: T)
+    def set[T <: T_Val, C: ClassTag[T]](value: T)
 
-    def set(key: Symbol, value: T_Ctx)
-
-  }
-
-  trait ServiceContext[T_Service] extends Context[T_Service] {
+    def set(key: T_Key, value: T_Val)
 
   }
 
