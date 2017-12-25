@@ -1,6 +1,4 @@
-package ck
-
-import service._
+package nz.eqs.ck
 
 import scala.util.Try
 
@@ -10,6 +8,7 @@ package object lifecycle {
 }
 
 package lifecycle {
+  import service._
 
   trait Scope[Parent <: Scope[_]]
   trait State[Scope]

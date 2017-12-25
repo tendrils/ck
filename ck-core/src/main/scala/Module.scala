@@ -6,12 +6,13 @@ package object module {
 
 package module {
   import app._
+  import service._
 
-  trait Module[M <: Module[M]] {
-    val dependencies: Set[Module[_]]
+  trait ModuleDef[M <: ModuleDef[M]] {
+    val dependencies: Set[ModuleDef[_]]
     val provides: Set[ServiceClass[_]]
   }
 
-  trait AppSpecificModule[A <: CKApp[A]] extends Module[AppSpecificModule[A]]
+  trait AppSpecificModuleDef[A <: CKApp[A]] extends ModuleDef[AppSpecificModuleDef[A]]
 
 }

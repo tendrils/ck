@@ -1,7 +1,6 @@
-package nz.eqs.ck
-package core
+package modules
 
-import ck.service.Service
+import modules.service.Service
 
 trait ServiceManager extends Service[ServiceManager] {
 
