@@ -11,7 +11,7 @@ package object service {
   val ServiceProtocolVersion: Long = 0
 
   type ServiceRef[C <: ServiceClass[C]] = () => Service[C]
-  type Listener[C <: ServiceClass[C], E <: Event[C,E]] = E => Unit
+  type Listener[C <: ServiceClass[C], E <: Event[C]] = E => Unit
 
   implicit def callByName2StaticServiceRef[C <: ServiceClass[C]](f: => Service[C]): ServiceRef[C] = () => f
 
@@ -32,6 +32,8 @@ package service {
     val classId: UUID         // UUID corresponding to service class-name
     val classVersion: Long    // sequential numeric service protocol version
     val instanceId: UUID      // random ID for instance tags, or "NULL" for class tags
+
+    def equals(tag: ServiceTag[_]): Boolean = id == tag.id
   }
 
   case class ServiceId[C <: ServiceClass[C]](override val classId: UUID, override val classVersion: Long, override val instanceId: UUID) extends ServiceTag[C] {

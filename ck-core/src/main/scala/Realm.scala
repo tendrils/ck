@@ -5,61 +5,55 @@ package object realm {
 }
 
 package realm {
-  import java.util.UUID
 
   import service._
-  import context._
 
-  import scala.reflect.ClassTag
+  object Realm {
+    private var default: Realm = Empty
 
-  trait RealmContext extends Context[ServiceRef[_]]
+    def apply(): Realm = default
+  }
 
   trait Realm {
-    protected var servicesByClass: Map[ClassId[_],ServiceRef[_]] = Map()
+    private var _subscribers: Map[Event[_], Set[Listener[_, _]]] = Map()
 
-    def contextServices: Set[ClassId[_]] = servicesByClass.keySet
+    protected def masterIndex: Map[ServiceTag[_], ServiceRef[_]]
+
+    protected def subscribers: Map[Event[_], Set[Listener[_, _]]] = _subscribers
+
+    def contextServices: Set[ClassId[_]] = (
+      for {
+        (tag, _) <- masterIndex if tag.tagType == ByClass
+      } yield tag.asInstanceOf[ClassId[_]]
+      ).asInstanceOf[Set[ClassId[_]]]
 
     // get service by type
     def apply[C: ServiceClass]: ServiceRef[C] = apply[C](implicitly[ServiceClass[C]].classId)
-    // get service by tag
-    def apply[C <: ServiceClass[C]](tag: ServiceTag[C]): ServiceRef[C] = {
-      match tag {
-        case ServiceId[C](_, _, instanceId: UUID) => id
-      }
-    }
 
-    def send[C <: ServiceClass[C]]: Command[C] => Unit
+    // get service by tag
+    def apply[C <: ServiceClass[C]](tag: ServiceTag[C]): ServiceRef[C] = masterIndex(tag).asInstanceOf[ServiceRef[C]]
+
+    def send[C: ServiceClass]: Command[C] => Unit = send[C](implicitly[ServiceClass[C]].classId)
+
     def send[C <: ServiceClass[C]](id: ServiceTag[C]): Command[C] => Unit
 
-    def subscribe[C: ServiceClass, M <: Event[ServiceClass[C]]](f: Listener[C,M])
-    def unsubscribe[C: ServiceClass, M <: Event[ServiceClass[C]]](f: Listener[C,M])
+    def subscribe[C <: ServiceClass[C], E <: Event[C]](e: E, f: Listener[C, E]) =
+      _subscribers = _subscribers + (e -> (_subscribers(e) + f.asInstanceOf[Listener[_, _]]))
+
+    def unsubscribe[C <: ServiceClass[C], E <: Event[C]](e: Event[C], f: Listener[_, _]) =
+      _subscribers = _subscribers + (e -> (_subscribers(e) - f))
   }
 
-  class SimpleRealm(val values: Map[ServiceTag[_],ServiceRef[_]]) extends Realm {
-    override def contextServices: Set[ClassId[_]] = ???
-
-    override def apply[C <: ServiceClass[C]](tag: ServiceTag[C]): ServiceRef[C] = ???
-
-    override def send[C <: ServiceClass[C]]: Command[C] => Unit = ???
-
+  abstract class StaticRealm(val masterIndex: Map[ServiceTag[_], ServiceRef[_]]) extends Realm {
     override def send[C <: ServiceClass[C]](id: ServiceTag[C]): Command[C] => Unit = ???
-
-    override def subscribe[C: ServiceClass, M <: Event[ServiceClass[C]]](f: Listener[C, M]): Unit = ???
-
-    override def unsubscribe[C: ServiceClass, M <: Event[ServiceClass[C]]](f: Listener[C, M]): Unit = ???
-
-    override def apply[T <: ServiceRef[_]](implicit tag: ClassTag[T]): Option[T] = ???
-
-    override def apply[T <: ServiceTag[_]](key: ContextKey[T]): Option[T] = ???
-
-    override def set(kv: (ContextKey[ServiceTag[_]], ServiceTag[_])): Unit = ???
   }
 
   trait DelegatingRealm extends Realm {
     private var delegate: Realm = Empty
+
     def setDelegate(delegate: Realm) = this.delegate = delegate
   }
 
-  object Realm extends Realm with DelegatingRealm
-  object Empty extends Realm
+  object Empty extends StaticRealm(Map())
+
 }
