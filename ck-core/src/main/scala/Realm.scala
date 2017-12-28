@@ -40,7 +40,7 @@ package realm {
     def subscribe[C <: ServiceClass[C], E <: Event[C]](e: E, f: Listener[C, E]) =
       _subscribers = _subscribers + (e -> (_subscribers(e) + f.asInstanceOf[Listener[_, _]]))
 
-    def unsubscribe[C <: ServiceClass[C], E <: Event[C]](e: Event[C], f: Listener[_, _]) =
+    def unsubscribe[C <: ServiceClass[C], E <: Event[C]](e: E, f: Listener[_, _]) =
       _subscribers = _subscribers + (e -> (_subscribers(e) - f))
   }
 
