@@ -6,7 +6,7 @@ package core {
   import service._
   class AkkaServiceDriver[C <: ServiceClass[C]](implicit actorSystem: ActorSystem) extends ServiceDriver[C] {
     val actor: ActorRef = ???
-    override def consume: Command[C] => Unit = actor.forward(_)
+    override def consume: CommandDescriptor[C] => Unit = actor.forward(_)
   }
 
 }

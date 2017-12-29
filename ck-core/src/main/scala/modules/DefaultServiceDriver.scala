@@ -10,13 +10,12 @@ package core {
     trait
   }
 
-  class DefaultServiceDriver(implicit var executor: ExecutionContextExecutor) extends ServiceDriver {
+  class DefaultServiceDriver[C <: ServiceClass[C]](implicit var executor: ExecutionContextExecutor) extends ServiceDriver[C] {
     import service._
 
-    val incoming: ParSeq[Command[_]] = ParSeq()
+    val incoming: ParSeq[Command[C,_]] = ParSeq()
 
-
-    override def consume: Command[_] => Unit = ???
+    override def consume: Command[C,_] => Unit = ???
   }
 
 }

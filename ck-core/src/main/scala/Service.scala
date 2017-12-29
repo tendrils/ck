@@ -11,13 +11,15 @@ package object service {
   val ServiceProtocolVersion: Long = 0
 
   type ServiceRef[C <: ServiceClass[C]] = () => Service[C]
-  type Listener[C <: ServiceClass[C], E <: Event[C]] = E => Unit
+  type Listener[C <: ServiceClass[C], E <: EventDescriptor[C]] = E => Unit
+
+  implicit val defaultRealm: Realm = Realm()
 
   implicit def callByName2StaticServiceRef[C <: ServiceClass[C]](f: => Service[C]): ServiceRef[C] = () => f
 
   implicit def serviceTag2ContextServiceRef[C <: ServiceClass[C]](tag: ServiceTag[C]): ServiceRef[C] = implicitly[Realm].apply(tag)
 
-  implicit def classId2ServiceClass[C <: ServiceClass[C]](tag: ClassId[C]): ServiceClass[C] =
+  implicit def classId2ServiceClass[C <: ServiceClass[C]](tag: ClassId[C]): ServiceClass[C] = implicitly[Realm].apply(tag)().descriptor
 }
 
 package service {
@@ -44,7 +46,7 @@ package service {
   case class ClassId[C <: ServiceClass[C]](override val classId: UUID, override val classVersion: Long) extends ServiceTag[C] {
     override val tagType: TagType = ByClass
     override val id: UUID = classId
-    override val instanceId: String = "NULL"
+    override val instanceId: UUID = UUID.fromString("CLASS")
   }
 
   sealed case class TagType(value: String)
@@ -59,27 +61,39 @@ package service {
 
     val descriptor: ServiceClass[C]
 
-    def send(c: Command[C])
+    def send(c: CommandDescriptor[C])
 
-    def subscribe(l: Listener[C, Event[C]])
+    def subscribe(l: Listener[C, EventDescriptor[C]])
 
   }
 
   trait ServiceClass[C <: ServiceClass[C]] {
     val classId: ClassId[C]
     val parent: ClassId[_]
-    val commands: Set[Command[C]]
-    val events: Set[Event[C]]
+    val commands: Set[CommandDescriptor[C]]
+    val events: Set[EventDescriptor[C]]
     val dependencies: Set[ServiceClass[_]]
 
   }
 
-  trait Command[C <: ServiceClass[C]] {
+  trait MessageDescriptor[D <: MessageDescriptor[D]] {
     def apply(paramName: String): ClassTag[_] = params(paramName)
     def params: Map[String, ClassTag[_]]
   }
 
-  trait Event[C <: ServiceClass[C]]
+  trait Message[D <: MessageDescriptor[D]] {
+    def apply(paramName: String): Serializable = params(paramName)
+    def descriptor: D
+    def params: Map[String, Serializable]
+  }
+
+  trait CommandDescriptor[C <: ServiceClass[C]] extends MessageDescriptor[CommandDescriptor[C]]
+
+  trait EventDescriptor[C <: ServiceClass[C]] extends MessageDescriptor[CommandDescriptor[C]]
+
+  trait Command[C <: ServiceClass[C], D <: CommandDescriptor[C]] extends Message[D]
+
+  trait Event[C <: ServiceClass[C], D <: CommandDescriptor[C]] extends Message[D]
 
   trait ServiceDriver[C <: ServiceClass[C]] {
     def consume: Command[C] => Unit

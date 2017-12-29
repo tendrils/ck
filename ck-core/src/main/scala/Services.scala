@@ -19,8 +19,8 @@ package services {
 
       override val classId: ClassId[RootServiceClass] = ClassId(UUID.fromString(RootServiceClassName), ServiceProtocolVersion)
       override val parent: ClassId[RootServiceClass] = classId
-      override val commands: Set[Command[RootServiceClass]] = Set()
-      override val events: Set[Event[RootServiceClass]] = Set()
+      override val commands: Set[CommandDescriptor[RootServiceClass]] = Set()
+      override val events: Set[EventDescriptor[RootServiceClass]] = Set()
       override val dependencies: Set[ServiceClass[_]] = Set(AppManager, SupervisorControllerClass)
     }
 
@@ -41,8 +41,8 @@ package services {
     trait AppManager extends ServiceClass[AppManager] {
       override val classId: ClassId[AppManager] = ClassId(UUID.fromString(AppManagerClassName), AppManagerProtocolVersion)
       override val parent: ClassId[_] = _
-      override val commands: Set[Command[AppManager]] = _
-      override val events: Set[Event[AppManager]] = _
+      override val commands: Set[CommandDescriptor[AppManager]] = _
+      override val events: Set[EventDescriptor[AppManager]] = _
       override val dependencies: Set[ServiceClass[_]] = Set()
     }
 
@@ -71,15 +71,18 @@ package services {
 
       import scala.reflect.ClassTag
 
-      case object Terminate extends Command[SupervisorClass] {
+      case object Terminate extends CommandDescriptor[SupervisorClass] {
         override def params: Map[String, ClassTag[_]] = ???
       }
 
     }
 
     package events {
+      import scala.reflect.ClassTag
 
-      case object SupervisorTerminated extends Event[SupervisorClass]
+      case object SupervisorTerminated extends EventDescriptor[SupervisorClass] {
+        override val params: Map[String, ClassTag[_]] = Map("supervisorId" -> ClassTag[ServiceId[_]], "exitStatus" -> ClassTag[String]).asInstanceOf[Map[String,ClassTag[_]]]
+      }
 
     }
 
@@ -90,8 +93,8 @@ package services {
 
       override val classId: ClassId[SupervisorClass] = SupervisorClassId
       override val parent: ClassId[_] = RootServiceClass.classId
-      override val commands: Set[Command[SupervisorClass]] = Set(Terminate)
-      override val events: Set[Event[SupervisorClass]] = Set(SupervisorTerminated)
+      override val commands: Set[CommandDescriptor[SupervisorClass]] = Set(Terminate)
+      override val events: Set[EventDescriptor[SupervisorClass]] = Set(SupervisorTerminated)
       override val dependencies: Set[ServiceClass[_]] = Set()
     }
 
@@ -115,8 +118,8 @@ package services {
 
         override val classId: ClassId[SupervisorControllerClass] = SupervisorControllerClassId
         override val parent: ClassId[_] = RootServiceClass.classId
-        override val commands: Set[Command[SupervisorControllerClass]] = Set()
-        override val events: Set[Event[SupervisorControllerClass]] = Set()
+        override val commands: Set[CommandDescriptor[SupervisorControllerClass]] = Set()
+        override val events: Set[EventDescriptor[SupervisorControllerClass]] = Set()
         override val dependencies: Set[ServiceClass[_]] = Set()
       }
 
