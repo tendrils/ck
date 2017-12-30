@@ -6,31 +6,34 @@ package object context {
 
   type ContextKey[T] = Either[ClassTag[T], String]
 
-  implicit def map2Context[V](entries: Map[ContextKey[V], V]): Context[V] = new SimpleContext(entries)
+  type ContextEntry[T] = (ContextKey[T], T)
+
+  implicit def map2Context[V](entries: Map[ContextKey[_], ContextEntry[_]]): Context = new SimpleContext(entries)
 
 }
 
 package context {
 
   object Context {
-    def apply[V](): Context[V] = new SimpleContext[V]()
+    def apply(): Context = new SimpleContext()
   }
 
-  trait Context[V] {
-    def apply[T <: V](implicit tag: ClassTag[T]): Option[T] = apply(tag.asInstanceOf[ContextKey[T]])
+  trait Context {
+    def apply[T: ClassTag]: Option[T] = apply(implicitly[ClassTag[T]].asInstanceOf[ContextKey[T]])
 
-    def apply[T <: V](key: ContextKey[T]): Option[T]
+    def apply[T](key: ContextKey[T]): Option[T]
 
-    def set[T <: V](implicit tag: ClassTag[T], value: T) = set(tag.asInstanceOf[ContextKey[V]] -> value)
+    def set[T: ClassTag](value: T): Unit = set(implicitly[ClassTag[T]].asInstanceOf[ContextKey[T]] -> value)
 
-    def set(kv: (ContextKey[V], V))
+    def set[T](kv: (ContextKey[T], T)): Unit
 
   }
 
-  class SimpleContext[V](var entries: Map[ContextKey[V], V] = Map()) extends Context[V] {
-    override def apply[T <: V](key: ContextKey[T]): Option[T] = entries(key)
+  class SimpleContext(protected var entries: Map[ContextKey[_], ContextEntry[_]] = Map()) extends Context {
+    override def apply[T](key: ContextKey[T]): Option[ContextEntry[T]] =
+      entries.get(key.asInstanceOf[ContextKey[_]]).asInstanceOf[Option[ContextEntry[T]]]
 
-    override def set(kv: (ContextKey[V], V)) = entries = entries + kv
+    override def set[T](kv: ContextEntry[T]) = entries = entries + kv.asInstanceOf
   }
 
 }
