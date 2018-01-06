@@ -12,7 +12,7 @@ package app {
   import services.appmanager._
   import services.supervisor.control._
 
-  trait CKApp[A <: CKApp[A]] extends ModuleDef[A] {
+  trait CKApp[A <: CKApp[A]] extends Module[A] {
     def supervisor: ServiceRef[SupervisorControl]
     def manager: ServiceRef[AppManagerService[A]]
   }

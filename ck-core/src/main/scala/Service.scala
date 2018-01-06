@@ -28,22 +28,28 @@ package service {
 
   sealed trait ServiceTag[C <: ServiceClass[C]] extends Serializable {
     // underlying service coordination protocol version which produced this tag
-    val tagVersion: Long = ServiceProtocolVersion
+    val tagVersion: RootProtocolVersion
     val tagType: TagType
     val id: UUID
-    val classId: UUID         // UUID corresponding to service class-name
-    val classVersion: Long    // sequential numeric service protocol version
-    val instanceId: UUID      // random ID for instance tags, or "NULL" for class tags
+    val classId: UUID                     // UUID corresponding to service class-name
+    val classVersion: ProtocolVersion[C]  // sequential numeric service protocol version
+    val instanceId: UUID                  // random ID for instance tags, or "CLASS" for class tags
 
     def equals(tag: ServiceTag[_]): Boolean = id == tag.id
   }
 
-  case class ServiceId[C <: ServiceClass[C]](override val classId: UUID, override val classVersion: Long, override val instanceId: UUID) extends ServiceTag[C] {
+  case class ServiceId[C <: ServiceClass[C]] (override val classId: UUID, override val instanceId: UUID)
+  (implicit override val tagVersion: RootProtocolVersion, implicit val classVersion: ProtocolVersion[C])
+    extends ServiceTag[C]
+  {
     override val tagType: TagType = ByInstance
     override val id: UUID = instanceId
   }
 
-  case class ClassId[C <: ServiceClass[C]](override val classId: UUID, override val classVersion: Long) extends ServiceTag[C] {
+  case class ClassId[C <: ServiceClass[C]] (override val classId: UUID)
+  (implicit override val tagVersion: RootProtocolVersion, implicit override val classVersion: ProtocolVersion[C])
+    extends ServiceTag[C]
+  {
     override val tagType: TagType = ByClass
     override val id: UUID = classId
     override val instanceId: UUID = UUID.fromString("CLASS")
@@ -67,7 +73,19 @@ package service {
 
   }
 
+  object ServiceClass {
+    private var classes: Set[ServiceClass[_]] = Set()
+    def register[M <: ServiceClass[M]](op: (Set[ServiceClass[_]] => Set[ServiceClass[_]])): Unit = {
+      classes = op(classes)
+    }
+    def registry: Set[ServiceClass[_]] = classes
+    def apply[C <: ServiceClass[C], V: ProtocolVersion[C]](tag: ServiceTag[C]): Option[ServiceClass[C]] = {
+      classes find(_.classId == tag) map(_.asInstanceOf[ServiceClass[C]])
+    }
+  }
+
   trait ServiceClass[C <: ServiceClass[C]] {
+    val version: ProtocolVersion[C]
     val classId: ClassId[C]
     val parent: ClassId[_]
     val commands: Set[CommandDescriptor[C]]
@@ -75,6 +93,10 @@ package service {
     val dependencies: Set[ServiceClass[_]]
 
   }
+
+  case class RootProtocolVersion(seq: Long, name: String)
+
+  case class ProtocolVersion[C <: ServiceClass[C]](implicit rootPV: RootProtocolVersion, seq: Long, name: String)
 
   trait MessageDescriptor[D <: MessageDescriptor[D]] {
     def apply(paramName: String): ClassTag[_] = params(paramName)
@@ -96,7 +118,7 @@ package service {
   trait Event[C <: ServiceClass[C], D <: CommandDescriptor[C]] extends Message[D]
 
   trait ServiceDriver[C <: ServiceClass[C]] {
-    def consume: Command[C] => Unit
+    def consume[D <: MessageDescriptor[D]](cmd: Command[C,D]): Unit
   }
 
   trait ServiceReference[C <: ServiceClass[C]] extends Reference[Service[C]]

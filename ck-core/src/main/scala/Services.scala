@@ -8,6 +8,7 @@ package services {
 
   package object classes {
     val RootServiceClassName: String = "ck::classes:root"
+    implicit val rpv: RootProtocolVersion = RootProtocolVersion(0, "0.0.1")
   }
 
   package classes {
@@ -17,7 +18,8 @@ package services {
       import services.appmanager._
       import services.supervisor.control._
 
-      override val classId: ClassId[RootServiceClass] = ClassId(UUID.fromString(RootServiceClassName), ServiceProtocolVersion)
+      override val version: ProtocolVersion[RootServiceClass] = _
+      override val classId: ClassId[RootServiceClass] = ClassId() //ClassId(UUID.fromString(RootServiceClassName))
       override val parent: ClassId[RootServiceClass] = classId
       override val commands: Set[CommandDescriptor[RootServiceClass]] = Set()
       override val events: Set[EventDescriptor[RootServiceClass]] = Set()
@@ -29,18 +31,22 @@ package services {
   }
 
   package object appmanager {
-    val AppManagerProtocolVersion = 0
+    // TODO inject this
+    val AppManagerProtocolVersionNumber = 0
+    val AppManagerProtocolVersionName = "0.0.1"
     val AppManagerClassName: String = "ck::services:appmanager"
+    implicit val AppManagerProtocolVersion: ProtocolVersion[AppManager] = ProtocolVersion(AppManagerProtocolVersionNumber, AppManagerProtocolVersionName) // ProtocolVersion(AppManagerProtocolVersionNumber, AppManagerProtocolVersionName)
   }
 
   package appmanager {
 
     import app._
     import lifecycle._
+    import nz.eqs.ck.services.classes.RootServiceClass
 
     trait AppManager extends ServiceClass[AppManager] {
-      override val classId: ClassId[AppManager] = ClassId(UUID.fromString(AppManagerClassName), AppManagerProtocolVersion)
-      override val parent: ClassId[_] = _
+      override val classId: ClassId[AppManager] = ClassId(UUID.fromString(AppManagerClassName), AppManagerProtocolVersionNumber)
+      override val parent: ClassId[_] = RootServiceClass.classId
       override val commands: Set[CommandDescriptor[AppManager]] = _
       override val events: Set[EventDescriptor[AppManager]] = _
       override val dependencies: Set[ServiceClass[_]] = Set()
@@ -55,7 +61,6 @@ package services {
   }
 
   package object supervisor {
-
     // TODO inject this
     val SupervisorProtocolVersion = 0
     val SupervisorClassName = "ck::services:supervisor"

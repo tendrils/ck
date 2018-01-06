@@ -1,10 +1,12 @@
 package nz.eqs.ck
 
+import scala.collection.parallel.immutable._
+
 import service._
 
 package object realm {
-  private[realm] type RealmIndex = Map[ServiceTag[_], ServiceRef[_]]
-  private[realm] type SubscriberIndex = Map[EventDescriptor[_], Set[Listener[_, _]]]
+  private[realm] type RealmIndex = ParMap[ServiceTag[_], ServiceRef[_]]
+  private[realm] type SubscriberIndex = ParMap[EventDescriptor[_], Set[Listener[_, _]]]
 
 }
 
@@ -20,7 +22,7 @@ package realm {
 
   trait Realm {
 
-    protected var _subscribers: SubscriberIndex = Map()
+    protected var _subscribers: SubscriberIndex = ParMap()
 
     protected def masterIndex: RealmIndex
 
@@ -53,17 +55,18 @@ package realm {
 
   // a simple realm type which takes an immutable service map, and provides static references to
   // the service instances it is initialized against
-  abstract class StaticRealm(val services: Map[ServiceTag[_], Service[_]]) extends Realm {
+  case class StaticRealm(services: RealmIndex) extends Realm {
     override val masterIndex: RealmIndex = (services map(e => () => e._2)).asInstanceOf[RealmIndex]
-    override def send[C <: ServiceClass[C], D <: CommandDescriptor[C]](id: ServiceTag[C], cmd: Command[C,D]): Unit = services(id) send cmd
+    override def send[C <: ServiceClass[C], D <: CommandDescriptor[C]](id: ServiceTag[C], cmd: Command[C,D]): Unit = services(id)() send cmd
   }
 
   trait DelegatingRealm extends Realm {
     private var delegate: Realm = Empty
+    private def alter(op: Realm => Realm): Unit = delegate = op(delegate)
 
-    def setDelegate(delegate: Realm): Unit = this.delegate = delegate
+    def set(delegate: Realm): Unit = alter((_) => delegate)
   }
 
-  object Empty extends StaticRealm(Map())
+  object Empty extends StaticRealm(ParMap())
 
 }
