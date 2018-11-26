@@ -17,7 +17,7 @@ package lifecycle {
 
   trait PhaseOrdering[Scope] extends Ordering[Phase[Scope]]
 
-  trait LifecycleManager[Scope] extends ServiceClass[LifecycleManager[Scope]] {
+  trait LifecycleManager[Scope] extends Protocol[LifecycleManager[Scope]] {
   }
 
   object Main extends Scope[Nothing] {

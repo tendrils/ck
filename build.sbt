@@ -1,10 +1,6 @@
-name := "ck"
 
-version := "0.1"
+lazy val ck = (project in file("."))
+  .aggregate(core_mk2)
 
-scalaVersion := "2.12.4"
-
-lazy val root = (project in file("."))
-  .aggregate(core)
-
-lazy val core = (project in file("ck-core"))
+lazy val core_mk1 = project
+lazy val core_mk2 = project

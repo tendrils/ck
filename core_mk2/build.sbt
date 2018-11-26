@@ -1,4 +1,4 @@
-name := "ck-core"
+name := "ck-core-mk2"
 
 version := "0.1"
 

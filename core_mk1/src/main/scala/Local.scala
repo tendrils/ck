@@ -9,8 +9,8 @@ package local {
   import service._
 
   package object types {
-    type MessageQueue[C <: ServiceClass[C]] = Seq[Command[C,_]]
-    trait QueueRef[C <: ServiceClass[C]] {
+    type MessageQueue[C <: Protocol[C]] = Seq[Command[C,_]]
+    trait QueueRef[C <: Protocol[C]] {
       protected var queue: MessageQueue[C]
       def apply: MessageQueue[C] = queue
       def update(op: (MessageQueue[C] => MessageQueue[C])): Unit = queue = op(queue)
@@ -21,14 +21,14 @@ package local {
     import types._
     protected var messageQueues: Map[ServiceTag[_], QueueRef[_]] = Map()
 
-    protected def queue[C <: ServiceClass[C]](id: ServiceTag[C]): QueueRef[C] =
+    protected def queue[C <: Protocol[C]](id: ServiceTag[C]): QueueRef[C] =
       (messageQueues.find(_._1 == id) getOrElse {
         val queue: QueueRef[C] = new QueueRef[C] { var queue: MessageQueue[C] = Seq[Command[C, _]]() }
         messageQueues = messageQueues + (id -> queue.asInstanceOf[QueueRef[_]])
         queue
       }).asInstanceOf[QueueRef[C]]
 
-    override def send[C <: ServiceClass[C], D <: CommandDescriptor[C]](id: ServiceTag[C], cmd: Command[C, D]): Unit = queue(id) update(_ :+ cmd)
+    override def send[C <: Protocol[C], D <: CommandDescriptor[C]](id: ServiceTag[C], cmd: Command[C, D]): Unit = queue(id) update(_ :+ cmd)
   }
 
   // a local-side implementation type, representing a back-end message consumer which
